@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MagicDeckbuilder.Models;
+using MagicDeckbuilder.Models.Magic;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace MagicDeckbuilder.Data
 {
@@ -22,5 +24,8 @@ namespace MagicDeckbuilder.Data
             // For example, you can rename the ASP.NET Identity table names and more.
             // Add your customizations after calling base.OnModelCreating(builder);
         }
+
+        public DbSet<Set> Sets { get; set; }
+        public DbSet<Card> Cards { get; set; }
     }
 }
