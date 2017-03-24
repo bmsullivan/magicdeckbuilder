@@ -1,0 +1,9 @@
+﻿<template>
+    <table class="table table-striped">
+        <tr><th>Name</th><th></th></tr>
+        <tr repeat.for="deck of decks">
+            <td>${deck.name}</td>
+            <td><a route-href="route: decks/edit; params.bind: {id: deck.id}"><i class="fa fa-edit"></i></a></td>
+        </tr>
+    </table>
+</template>

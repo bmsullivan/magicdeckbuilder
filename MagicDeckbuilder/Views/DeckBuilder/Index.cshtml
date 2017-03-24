@@ -1,6 +1,10 @@
-﻿<div aurelia-app="deckbuilder">
+﻿@inject UserManager<ApplicationUser> UserManager
+<div aurelia-app="deckbuilder">
     
 </div>
 @section Scripts {
+    <script type="text/javascript">
+        window.currentUserId = '@UserManager.GetUserId(User)';
+    </script>
     <script src="/scripts/vendor-bundle.js" data-main="aurelia-bootstrapper"></script>
 }
