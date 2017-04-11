@@ -13935,12 +13935,11 @@ define('aurelia-logging',['exports'], function (exports) {
   }
 
   function connectLoggers() {
-    Object.assign(Logger.prototype, {
-      debug: logFactory('debug'),
-      info: logFactory('info'),
-      warn: logFactory('warn'),
-      error: logFactory('error')
-    });
+    var proto = Logger.prototype;
+    proto.debug = logFactory('debug');
+    proto.info = logFactory('info');
+    proto.warn = logFactory('warn');
+    proto.error = logFactory('error');
   }
 
   function getLogger(id) {
@@ -14477,7 +14476,7 @@ define('aurelia-pal-browser',['exports', 'aurelia-pal'], function (exports, _aur
   if (typeof FEATURE_NO_IE === 'undefined') {
     var test = function test() {};
 
-    if (!test.name) {
+    if (test.name === undefined) {
       Object.defineProperty(Function.prototype, 'name', {
         get: function get() {
           var name = this.toString().match(/^\s*function\s*(\S*)\s*\(/)[1];
@@ -16760,13 +16759,14 @@ define('aurelia-router',['exports', 'aurelia-logging', 'aurelia-route-recognizer
     };
 
     NavigationInstruction.prototype.addViewPortInstruction = function addViewPortInstruction(viewPortName, strategy, moduleId, component) {
+      var config = Object.assign({}, this.lifecycleArgs[1], { currentViewPort: viewPortName });
       var viewportInstruction = this.viewPortInstructions[viewPortName] = {
         name: viewPortName,
         strategy: strategy,
         moduleId: moduleId,
         component: component,
         childRouter: component.childRouter,
-        lifecycleArgs: this.lifecycleArgs.slice()
+        lifecycleArgs: [].concat(this.lifecycleArgs[0], config, this.lifecycleArgs[2])
       };
 
       return viewportInstruction;
@@ -22522,8 +22522,16 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     HtmlBehaviorResource.prototype.register = function register(registry, name) {
+      var _this13 = this;
+
       if (this.attributeName !== null) {
         registry.registerAttribute(name || this.attributeName, this, this.attributeName);
+
+        if (Array.isArray(this.aliases)) {
+          this.aliases.forEach(function (alias) {
+            registry.registerAttribute(alias, _this13, _this13.attributeName);
+          });
+        }
       }
 
       if (this.elementName !== null) {
@@ -22532,7 +22540,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     HtmlBehaviorResource.prototype.load = function load(container, target, loadContext, viewStrategy, transientView) {
-      var _this13 = this;
+      var _this14 = this;
 
       var options = void 0;
 
@@ -22545,8 +22553,8 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
         }
 
         return viewStrategy.loadViewFactory(container.get(ViewEngine), options, loadContext, target).then(function (viewFactory) {
-          if (!transientView || !_this13.viewFactory) {
-            _this13.viewFactory = viewFactory;
+          if (!transientView || !_this14.viewFactory) {
+            _this14.viewFactory = viewFactory;
           }
 
           return viewFactory;
@@ -23064,27 +23072,27 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     CompositionEngine.prototype._createControllerAndSwap = function _createControllerAndSwap(context) {
-      var _this14 = this;
+      var _this15 = this;
 
       return this.createController(context).then(function (controller) {
         controller.automate(context.overrideContext, context.owningView);
 
         if (context.compositionTransactionOwnershipToken) {
           return context.compositionTransactionOwnershipToken.waitForCompositionComplete().then(function () {
-            return _this14._swap(context, controller.view);
+            return _this15._swap(context, controller.view);
           }).then(function () {
             return controller;
           });
         }
 
-        return _this14._swap(context, controller.view).then(function () {
+        return _this15._swap(context, controller.view).then(function () {
           return controller;
         });
       });
     };
 
     CompositionEngine.prototype.createController = function createController(context) {
-      var _this15 = this;
+      var _this16 = this;
 
       var childContainer = void 0;
       var viewModel = void 0;
@@ -23097,7 +23105,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
         viewModelResource = context.viewModelResource;
         m = viewModelResource.metadata;
 
-        var viewStrategy = _this15.viewLocator.getViewStrategy(context.view || viewModel);
+        var viewStrategy = _this16.viewLocator.getViewStrategy(context.view || viewModel);
 
         if (context.viewResources) {
           viewStrategy.makeRelativeTo(context.viewResources.viewUrl);
@@ -23137,7 +23145,7 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
 
     CompositionEngine.prototype.compose = function compose(context) {
-      var _this16 = this;
+      var _this17 = this;
 
       context.childContainer = context.childContainer || context.container.createChild();
       context.view = this.viewLocator.getViewStrategy(context.view);
@@ -23164,13 +23172,13 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
 
           if (context.compositionTransactionOwnershipToken) {
             return context.compositionTransactionOwnershipToken.waitForCompositionComplete().then(function () {
-              return _this16._swap(context, result);
+              return _this17._swap(context, result);
             }).then(function () {
               return result;
             });
           }
 
-          return _this16._swap(context, result).then(function () {
+          return _this17._swap(context, result).then(function () {
             return result;
           });
         });
@@ -23241,11 +23249,12 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
     };
   }
 
-  function customAttribute(name, defaultBindingMode) {
+  function customAttribute(name, defaultBindingMode, aliases) {
     return function (target) {
       var r = _aureliaMetadata.metadata.getOrCreateOwn(_aureliaMetadata.metadata.resource, HtmlBehaviorResource, target);
       r.attributeName = validateBehaviorName(name, 'custom attribute');
       r.attributeDefaultBindingMode = defaultBindingMode;
+      r.aliases = aliases;
     };
   }
 
@@ -23432,6 +23441,10 @@ define('aurelia-templating',['exports', 'aurelia-logging', 'aurelia-metadata', '
       var view = factory.create(container, BehaviorInstruction.enhance());
 
       view.bind(instruction.bindingContext || {}, instruction.overrideContext);
+
+      view.firstChild = view.lastChild = view.fragment;
+      view.fragment = _aureliaPal.DOM.createDocumentFragment();
+      view.attached();
 
       return view;
     };
@@ -24146,12 +24159,15 @@ define('aurelia-templating-resources/aurelia-templating-resources',['exports', '
     (0, _htmlResourcePlugin.configure)(config);
 
     var viewEngine = config.container.get(_aureliaTemplating.ViewEngine);
-    viewEngine.addResourcePlugin('.css', {
-      'fetch': function fetch(address) {
+    var styleResourcePlugin = {
+      fetch: function fetch(address) {
         var _ref;
 
         return _ref = {}, _ref[address] = (0, _cssResource._createCSSResource)(address), _ref;
       }
+    };
+    ['.css', '.less', '.sass', '.scss', '.styl'].forEach(function (ext) {
+      return viewEngine.addResourcePlugin(ext, styleResourcePlugin);
     });
   }
 
@@ -27119,7 +27135,7 @@ define('aurelia-testing/view-spy',['exports', 'aurelia-templating', 'aurelia-log
     return ViewSpy;
   }()) || _class);
 });
-define('aurelia-testing/component-tester',['exports', 'aurelia-templating', 'aurelia-framework'], function (exports, _aureliaTemplating, _aureliaFramework) {
+define('aurelia-testing/component-tester',['exports', 'aurelia-templating', 'aurelia-framework', './wait'], function (exports, _aureliaTemplating, _aureliaFramework, _wait) {
   'use strict';
 
   Object.defineProperty(exports, "__esModule", {
@@ -27273,7 +27289,7 @@ define('aurelia-testing/component-tester',['exports', 'aurelia-templating', 'aur
     ComponentTester.prototype.waitForElement = function waitForElement(selector, options) {
       var _this3 = this;
 
-      return waitFor(function () {
+      return (0, _wait.waitFor)(function () {
         return _this3.element.querySelector(selector);
       }, options);
     };
@@ -27281,7 +27297,7 @@ define('aurelia-testing/component-tester',['exports', 'aurelia-templating', 'aur
     ComponentTester.prototype.waitForElements = function waitForElements(selector, options) {
       var _this4 = this;
 
-      return waitFor(function () {
+      return (0, _wait.waitFor)(function () {
         return _this4.element.querySelectorAll(selector);
       }, options);
     };
@@ -27599,4 +27615,4 @@ define('aurelia-fetch-client/aurelia-fetch-client',['exports'], function (export
   }
 });;define('aurelia-fetch-client', ['aurelia-fetch-client/aurelia-fetch-client'], function (main) { return main; });
 
-function _aureliaConfigureModuleLoader(){requirejs.config({"baseUrl":"src/","paths":{"aurelia-binding":"..\\node_modules\\aurelia-binding\\dist\\amd\\aurelia-binding","aurelia-dependency-injection":"..\\node_modules\\aurelia-dependency-injection\\dist\\amd\\aurelia-dependency-injection","aurelia-event-aggregator":"..\\node_modules\\aurelia-event-aggregator\\dist\\amd\\aurelia-event-aggregator","aurelia-framework":"..\\node_modules\\aurelia-framework\\dist\\amd\\aurelia-framework","aurelia-loader-default":"..\\node_modules\\aurelia-loader-default\\dist\\amd\\aurelia-loader-default","aurelia-loader":"..\\node_modules\\aurelia-loader\\dist\\amd\\aurelia-loader","aurelia-history":"..\\node_modules\\aurelia-history\\dist\\amd\\aurelia-history","aurelia-history-browser":"..\\node_modules\\aurelia-history-browser\\dist\\amd\\aurelia-history-browser","aurelia-logging":"..\\node_modules\\aurelia-logging\\dist\\amd\\aurelia-logging","aurelia-logging-console":"..\\node_modules\\aurelia-logging-console\\dist\\amd\\aurelia-logging-console","aurelia-pal":"..\\node_modules\\aurelia-pal\\dist\\amd\\aurelia-pal","aurelia-metadata":"..\\node_modules\\aurelia-metadata\\dist\\amd\\aurelia-metadata","aurelia-pal-browser":"..\\node_modules\\aurelia-pal-browser\\dist\\amd\\aurelia-pal-browser","aurelia-bootstrapper":"..\\node_modules\\aurelia-bootstrapper\\dist\\amd\\aurelia-bootstrapper","aurelia-route-recognizer":"..\\node_modules\\aurelia-route-recognizer\\dist\\amd\\aurelia-route-recognizer","aurelia-path":"..\\node_modules\\aurelia-path\\dist\\amd\\aurelia-path","aurelia-polyfills":"..\\node_modules\\aurelia-polyfills\\dist\\amd\\aurelia-polyfills","aurelia-task-queue":"..\\node_modules\\aurelia-task-queue\\dist\\amd\\aurelia-task-queue","aurelia-router":"..\\node_modules\\aurelia-router\\dist\\amd\\aurelia-router","aurelia-templating-binding":"..\\node_modules\\aurelia-templating-binding\\dist\\amd\\aurelia-templating-binding","aurelia-templating":"..\\node_modules\\aurelia-templating\\dist\\amd\\aurelia-templating","text":"..\\node_modules\\text\\text","app-bundle":"../scripts/app-bundle"},"packages":[{"name":"aurelia-templating-resources","location":"../node_modules/aurelia-templating-resources/dist/amd","main":"aurelia-templating-resources"},{"name":"aurelia-templating-router","location":"../node_modules/aurelia-templating-router/dist/amd","main":"aurelia-templating-router"},{"name":"aurelia-testing","location":"../node_modules/aurelia-testing/dist/amd","main":"aurelia-testing"},{"name":"aurelia-fetch-client","location":"../node_modules/aurelia-fetch-client/dist/amd","main":"aurelia-fetch-client"}],"stubModules":["text"],"shim":{},"bundles":{"app-bundle":["deckbuilder-app","deckbuilder","environment","decks/edit","decks/list","resources/index"]}})}
+function _aureliaConfigureModuleLoader(){requirejs.config({"baseUrl":"src/","paths":{"aurelia-binding":"..\\node_modules\\aurelia-binding\\dist\\amd\\aurelia-binding","aurelia-bootstrapper":"..\\node_modules\\aurelia-bootstrapper\\dist\\amd\\aurelia-bootstrapper","aurelia-dependency-injection":"..\\node_modules\\aurelia-dependency-injection\\dist\\amd\\aurelia-dependency-injection","aurelia-history-browser":"..\\node_modules\\aurelia-history-browser\\dist\\amd\\aurelia-history-browser","aurelia-history":"..\\node_modules\\aurelia-history\\dist\\amd\\aurelia-history","aurelia-framework":"..\\node_modules\\aurelia-framework\\dist\\amd\\aurelia-framework","aurelia-loader":"..\\node_modules\\aurelia-loader\\dist\\amd\\aurelia-loader","aurelia-event-aggregator":"..\\node_modules\\aurelia-event-aggregator\\dist\\amd\\aurelia-event-aggregator","aurelia-logging":"..\\node_modules\\aurelia-logging\\dist\\amd\\aurelia-logging","aurelia-loader-default":"..\\node_modules\\aurelia-loader-default\\dist\\amd\\aurelia-loader-default","aurelia-logging-console":"..\\node_modules\\aurelia-logging-console\\dist\\amd\\aurelia-logging-console","aurelia-metadata":"..\\node_modules\\aurelia-metadata\\dist\\amd\\aurelia-metadata","aurelia-pal":"..\\node_modules\\aurelia-pal\\dist\\amd\\aurelia-pal","aurelia-polyfills":"..\\node_modules\\aurelia-polyfills\\dist\\amd\\aurelia-polyfills","aurelia-pal-browser":"..\\node_modules\\aurelia-pal-browser\\dist\\amd\\aurelia-pal-browser","aurelia-path":"..\\node_modules\\aurelia-path\\dist\\amd\\aurelia-path","aurelia-route-recognizer":"..\\node_modules\\aurelia-route-recognizer\\dist\\amd\\aurelia-route-recognizer","aurelia-router":"..\\node_modules\\aurelia-router\\dist\\amd\\aurelia-router","aurelia-templating":"..\\node_modules\\aurelia-templating\\dist\\amd\\aurelia-templating","aurelia-task-queue":"..\\node_modules\\aurelia-task-queue\\dist\\amd\\aurelia-task-queue","aurelia-templating-binding":"..\\node_modules\\aurelia-templating-binding\\dist\\amd\\aurelia-templating-binding","text":"..\\node_modules\\text\\text","app-bundle":"../scripts/app-bundle"},"packages":[{"name":"aurelia-templating-resources","location":"../node_modules/aurelia-templating-resources/dist/amd","main":"aurelia-templating-resources"},{"name":"aurelia-fetch-client","location":"../node_modules/aurelia-fetch-client/dist/amd","main":"aurelia-fetch-client"},{"name":"aurelia-templating-router","location":"../node_modules/aurelia-templating-router/dist/amd","main":"aurelia-templating-router"},{"name":"aurelia-testing","location":"../node_modules/aurelia-testing/dist/amd","main":"aurelia-testing"}],"stubModules":["text"],"shim":{},"bundles":{"app-bundle":["deckbuilder-app","deckbuilder","environment","decks/edit","decks/list","resources/index"]}})}

@@ -48,3 +48,39 @@ textarea {
         display: none;
     }
 }
+
+.deck-table td {
+    padding-right: 5px;
+}
+
+.deck-table .card-quantity {
+    width: 50px;
+}
+
+.card-tooltip-container {
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity .5s, visibility .5s;
+    border: 1px solid #777;
+    border-radius: 5px;
+    left: 110%;
+    background: #fff;
+    box-shadow: 2px 2px 2px #888;
+}
+
+.card-tooltip-link {
+    position: relative;
+}
+
+.card-tooltip-container img {
+    width: 208px;
+    height: 297px;
+    margin: 5px;
+}
+
+.card-tooltip-link:hover .card-tooltip-container {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity .5s, visibility .5s;
+}

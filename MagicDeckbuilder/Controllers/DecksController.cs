@@ -39,7 +39,9 @@ namespace MagicDeckbuilder.Controllers
                     Cards = x.DeckCards.Select(y => new
                     {
                         Name = y.Card.Name,
-                        Quantity = y.Quantity
+                        Quantity = y.Quantity,
+                        Set = y.Card.Set.MagicCardsInfoCode,
+                        Number = y.Card.Number
                     })
                 }).First();
             return Json(deck);
